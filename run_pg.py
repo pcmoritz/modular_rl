@@ -12,6 +12,35 @@ import shutil, os, logging
 import gym
 import ray
 
+# TODO(pcm): Use different seeds for different runs
+@ray.remote([dict], [])
+def run_experiment(cfg):
+  parser = argparse.ArgumentParser()
+  update_argument_parser(parser, cfg)
+  args = parser.parse_args()
+  env = make(args.env)
+  env_spec = env.spec
+  mondir = args.outfile + ".dir"
+  if os.path.exists(mondir): shutil.rmtree(mondir)
+  os.mkdir(mondir)
+  env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
+  agent_ctor = get_agent_cls(args.agent)
+  update_argument_parser(parser, agent_ctor.options)
+  args = parser.parse_args()
+  if args.timestep_limit == 0:
+    args.timestep_limit = env_spec.timestep_limit
+  cfg = args.__dict__
+  np.random.seed(args.seed)
+  agent = agent_ctor(env.observation_space, env.action_space, cfg)
+  if args.use_hdf:
+    hdf, diagnostics = prepare_h5_file(args)
+  gym.logger.setLevel(logging.WARN)
+
+  run_policy_gradient_algorithm(env, agent, usercfg = cfg)
+
+  env.monitor.close()
+
+
 if __name__ == "__main__":
     ray.services.start_ray_local(num_workers=8)
 
@@ -21,23 +50,8 @@ if __name__ == "__main__":
     parser.add_argument("--agent",required=True)
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
-    env = make(args.env)
-    env_spec = env.spec
-    mondir = args.outfile + ".dir"
-    if os.path.exists(mondir): shutil.rmtree(mondir)
-    os.mkdir(mondir)
-    env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
-    agent_ctor = get_agent_cls(args.agent)
-    update_argument_parser(parser, agent_ctor.options)
-    args = parser.parse_args()
-    if args.timestep_limit == 0:
-        args.timestep_limit = env_spec.timestep_limit
-    cfg = args.__dict__
-    np.random.seed(args.seed)
-    agent = agent_ctor(env.observation_space, env.action_space, cfg)
-    if args.use_hdf:
-        hdf, diagnostics = prepare_h5_file(args)
-    gym.logger.setLevel(logging.WARN)
+
+    run_experiment(args.__dict__)
 
     """
     COUNTER = 0
@@ -62,11 +76,11 @@ if __name__ == "__main__":
             animate_rollout(env, agent, min(500, args.timestep_limit))
     """
 
-    run_policy_gradient_algorithm(env, agent, usercfg = cfg)
+    # run_policy_gradient_algorithm(env, agent, usercfg = cfg)
 
-    if args.use_hdf:
-        hdf['env_id'] = env_spec.id
-        try: hdf['env'] = np.array(cPickle.dumps(env, -1))
-        except Exception: print "failed to pickle env" #pylint: disable=W0703
+    # if args.use_hdf:
+    #     hdf['env_id'] = env_spec.id
+    #     try: hdf['env'] = np.array(cPickle.dumps(env, -1))
+    #     except Exception: print "failed to pickle env" #pylint: disable=W0703
 
-    env.monitor.close()
+    # env.monitor.close()
