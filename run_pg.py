@@ -3,6 +3,11 @@
 This script runs a policy gradient algorithm
 """
 
+from collections import namedtuple
+
+def convert(dictionary):
+    return namedtuple('GenericDict', dictionary.keys())(**dictionary)
+
 
 import gym.envs
 from modular_rl import *
@@ -14,11 +19,9 @@ import gym
 import ray
 
 # TODO(pcm): Use different seeds for different runs
-@ray.remote([dict], [])
+@ray.remote([dict], [int])
 def run_experiment(cfg):
-  parser = argparse.ArgumentParser()
-  modular_rl.update_argument_parser(parser, cfg)
-  args = parser.parse_args()
+  args = convert(cfg)
   env = gym.envs.make(args.env)
   env_spec = env.spec
   mondir = args.outfile + ".dir"
@@ -26,11 +29,8 @@ def run_experiment(cfg):
   os.mkdir(mondir)
   env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
   agent_ctor = modular_rl.get_agent_cls(args.agent)
-  modular_rl.update_argument_parser(parser, agent_ctor.options)
-  args = parser.parse_args()
-  if args.timestep_limit == 0:
-    args.timestep_limit = env_spec.timestep_limit
   cfg = args.__dict__
+  cfg["timestep_limit"] = 200
   np.random.seed(args.seed)
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
   if args.use_hdf:
@@ -40,6 +40,8 @@ def run_experiment(cfg):
   run_policy_gradient_algorithm(env, agent, usercfg = cfg)
 
   env.monitor.close()
+
+  return 42
 
 
 if __name__ == "__main__":
@@ -52,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
 
-    run_experiment(args.__dict__)
+    ray.get(run_experiment(args.__dict__))
 
     """
     COUNTER = 0
