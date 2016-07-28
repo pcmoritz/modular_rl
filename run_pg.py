@@ -54,7 +54,9 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
 
-    ray.get(run_experiment(args.__dict__))
+    results = [run_experiment(args.__dict__) for i in range(0, 8)]
+
+    [ray.get(result) for result in results]
 
     """
     COUNTER = 0
