@@ -4,7 +4,7 @@ This script runs a policy gradient algorithm
 """
 
 
-from gym.envs import make
+import gym.envs
 from modular_rl import *
 import argparse, sys, cPickle
 from tabulate import tabulate
@@ -18,7 +18,7 @@ def run_experiment(cfg):
   parser = argparse.ArgumentParser()
   update_argument_parser(parser, cfg)
   args = parser.parse_args()
-  env = make(args.env)
+  env = gym.envs.make(args.env)
   env_spec = env.spec
   mondir = args.outfile + ".dir"
   if os.path.exists(mondir): shutil.rmtree(mondir)
