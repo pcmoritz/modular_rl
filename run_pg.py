@@ -6,6 +6,7 @@ This script runs a policy gradient algorithm
 
 import gym.envs
 from modular_rl import *
+import modular_rl
 import argparse, sys, cPickle
 from tabulate import tabulate
 import shutil, os, logging
