@@ -16,7 +16,7 @@ import ray
 @ray.remote([dict], [])
 def run_experiment(cfg):
   parser = argparse.ArgumentParser()
-  update_argument_parser(parser, cfg)
+  modular_rl.update_argument_parser(parser, cfg)
   args = parser.parse_args()
   env = gym.envs.make(args.env)
   env_spec = env.spec
@@ -24,8 +24,8 @@ def run_experiment(cfg):
   if os.path.exists(mondir): shutil.rmtree(mondir)
   os.mkdir(mondir)
   env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
-  agent_ctor = get_agent_cls(args.agent)
-  update_argument_parser(parser, agent_ctor.options)
+  agent_ctor = modular_rl.get_agent_cls(args.agent)
+  modular_rl.update_argument_parser(parser, agent_ctor.options)
   args = parser.parse_args()
   if args.timestep_limit == 0:
     args.timestep_limit = env_spec.timestep_limit
