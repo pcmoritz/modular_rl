@@ -22,7 +22,7 @@ import numpy as np
 # TODO(pcm): Use different seeds for different runs
 @ray.remote([dict, np.ndarray], [np.ndarray, dict])
 def run_experiment(cfg, pol):
-  args = convert(cfg)
+  args = dict(convert(cfg))
   env = gym.envs.make(args.env)
   env_spec = env.spec
   # mondir = args.outfile + ".dir"
