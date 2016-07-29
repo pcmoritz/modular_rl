@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     results = [run_experiment(args.__dict__) for i in range(0, 8)]
 
-    [ray.get(result) for result in results]
+    [ray.get(result[0]) for result in results]
 
     import IPython
     IPython.embed()
