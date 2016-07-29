@@ -31,6 +31,7 @@ def run_experiment(cfg):
   agent_ctor = modular_rl.get_agent_cls(args.agent)
   cfg = args.__dict__
   cfg["timestep_limit"] = 200
+  args.seed = int(time.time() * 1000)
   np.random.seed(args.seed)
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
   if args.use_hdf:
