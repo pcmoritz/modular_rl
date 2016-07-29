@@ -33,7 +33,7 @@ def run_experiment(cfg):
   cfg = args.__dict__
   cfg["timestep_limit"] = 200
   cfg["n_iter"] = 3
-  seed = int(time.time() * 1000)
+  seed = int(time.time() * 1000 % 4294967295)
   np.random.seed(seed)
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
   if args.use_hdf:
