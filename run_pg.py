@@ -25,9 +25,9 @@ def run_experiment(cfg, pol):
   args = convert(cfg)
   env = gym.envs.make(args.env)
   env_spec = env.spec
-  mondir = args.outfile + ".dir"
-  if os.path.exists(mondir): shutil.rmtree(mondir)
-  os.mkdir(mondir)
+  # mondir = args.outfile + ".dir"
+  # if os.path.exists(mondir): shutil.rmtree(mondir)
+  # os.mkdir(mondir)
   # env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
   agent_ctor = modular_rl.get_agent_cls(args.agent)
   cfg = args.__dict__
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     results = [run_experiment(args.__dict__, np.array([], dtype="float32")) for i in range(0, 8)]
 
     for i in range(20):
-      [ray.get(result[0]) for result in results]
+      print "result:" [ray.get(result[1]) for result in results]
       results = [run_experiment(args.__dict__, results[i][0]) for i in range(0, 8)]
 
     import IPython
