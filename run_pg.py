@@ -20,8 +20,8 @@ import ray
 import numpy as np
 
 # TODO(pcm): Use different seeds for different runs
-@ray.remote([dict], [np.ndarray, dict])
-def run_experiment(cfg):
+@ray.remote([dict, np.ndarray], [np.ndarray, dict])
+def run_experiment(cfg, pol):
   args = convert(cfg)
   env = gym.envs.make(args.env)
   env_spec = env.spec
@@ -36,6 +36,8 @@ def run_experiment(cfg):
   seed = int(time.time() * 1000 % 4294967295)
   np.random.seed(seed)
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
+  if pol.size != 0:
+    agent.set_from_flat(pol)
   if args.use_hdf:
     hdf, diagnostics = prepare_h5_file(args)
   gym.logger.setLevel(logging.WARN)
