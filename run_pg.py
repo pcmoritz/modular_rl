@@ -22,7 +22,7 @@ import numpy as np
 # TODO(pcm): Use different seeds for different runs
 @ray.remote([dict, np.ndarray], [np.ndarray, dict])
 def run_experiment(cfg, pol):
-  args = dict(convert(cfg))
+  args = convert(cfg)
   env = gym.envs.make(args.env)
   env_spec = env.spec
   # mondir = args.outfile + ".dir"
@@ -30,8 +30,8 @@ def run_experiment(cfg, pol):
   # os.mkdir(mondir)
   # env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
   agent_ctor = modular_rl.get_agent_cls(args.agent)
-  args.update(agent_ctor.options.__dict__)
   cfg = args.__dict__
+  cfg.update(agent_ctor.options.__dict__)
   cfg["timestep_limit"] = 200
   cfg["n_iter"] = 3
   seed = int(time.time() * 1000 % 4294967295)
@@ -57,8 +57,6 @@ if __name__ == "__main__":
     parser.add_argument("--agent",required=True)
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
-
-
 
     results = [run_experiment(args.__dict__, np.array([], dtype="float32")) for i in range(0, 8)]
 
