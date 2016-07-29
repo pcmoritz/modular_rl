@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
 
-    results = [run_experiment(args.__dict__) for i in range(0, 8)]
+    results = [run_experiment(args.__dict__, np.array([], dtype="float32")) for i in range(0, 8)]
 
     [ray.get(result[0]) for result in results]
 
