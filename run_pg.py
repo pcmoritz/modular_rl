@@ -17,9 +17,10 @@ from tabulate import tabulate
 import shutil, os, logging
 import gym
 import ray
+import numpy as np
 
 # TODO(pcm): Use different seeds for different runs
-@ray.remote([dict], [int])
+@ray.remote([dict], [np.ndarray])
 def run_experiment(cfg):
   args = convert(cfg)
   env = gym.envs.make(args.env)
@@ -31,6 +32,7 @@ def run_experiment(cfg):
   agent_ctor = modular_rl.get_agent_cls(args.agent)
   cfg = args.__dict__
   cfg["timestep_limit"] = 200
+  cfg["n_iter"] = 3
   args.seed = int(time.time() * 1000)
   np.random.seed(args.seed)
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
@@ -38,11 +40,9 @@ def run_experiment(cfg):
     hdf, diagnostics = prepare_h5_file(args)
   gym.logger.setLevel(logging.WARN)
 
-  run_policy_gradient_algorithm(env, agent, usercfg = cfg)
+  return run_policy_gradient_algorithm(env, agent, usercfg = cfg)
 
-  env.monitor.close()
-
-  return 42
+  # env.monitor.close()
 
 
 if __name__ == "__main__":

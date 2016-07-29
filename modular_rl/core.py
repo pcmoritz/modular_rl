@@ -99,7 +99,7 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         stats["TimeElapsed"] = time.time() - tstart
         if callback: callback(stats)
 
-        print agent.get_flat()
+    return agent.get_flat()
 
 def get_paths(env, agent, cfg, seed_iter):
     if cfg["parallel"]:
