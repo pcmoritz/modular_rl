@@ -60,7 +60,7 @@ if __name__ == "__main__":
     results = [run_experiment(args.__dict__, np.array([], dtype="float32")) for i in range(0, 8)]
 
     for i in range(20):
-      print "result:" [ray.get(result[1]) for result in results]
+      print "result:", [ray.get(result[1]) for result in results]
       results = [run_experiment(args.__dict__, results[i][0]) for i in range(0, 8)]
 
     import IPython
