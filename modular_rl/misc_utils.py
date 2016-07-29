@@ -84,6 +84,11 @@ def update_argument_parser(parser, options, **kwargs):
     if kwargs:
         raise ValueError("options %s ignored"%kwargs)
 
+def update_dict(d, options, **kwargs):
+    kwargs = kwargs.copy()
+    for (name,typ,default,desc) in options:
+        d[name] = kwargs.pop(name, default)
+
 def comma_sep_ints(s):
     if s:
         return map(int, s.split(","))
