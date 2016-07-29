@@ -28,7 +28,7 @@ def run_experiment(cfg, pol):
   mondir = args.outfile + ".dir"
   if os.path.exists(mondir): shutil.rmtree(mondir)
   os.mkdir(mondir)
-  env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
+  # env.monitor.start(mondir, video_callable=None if args.video else VIDEO_NEVER)
   agent_ctor = modular_rl.get_agent_cls(args.agent)
   cfg = args.__dict__
   cfg["timestep_limit"] = 200
