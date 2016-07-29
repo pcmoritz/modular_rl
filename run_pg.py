@@ -20,7 +20,7 @@ import ray
 import numpy as np
 
 # TODO(pcm): Use different seeds for different runs
-@ray.remote([dict], [np.ndarray])
+@ray.remote([dict], [np.ndarray, dict])
 def run_experiment(cfg):
   args = convert(cfg)
   env = gym.envs.make(args.env)
@@ -58,6 +58,9 @@ if __name__ == "__main__":
     results = [run_experiment(args.__dict__) for i in range(0, 8)]
 
     [ray.get(result) for result in results]
+
+    import IPython
+    IPython.embed()
 
     """
     COUNTER = 0
