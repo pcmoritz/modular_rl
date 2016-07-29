@@ -32,7 +32,6 @@ def run_experiment(cfg, pol):
   agent_ctor = modular_rl.get_agent_cls(args.agent)
   cfg = args.__dict__
   update_dict(cfg, agent_ctor.options)
-  cfg["timestep_limit"] = 200
   cfg["n_iter"] = 3
   seed = int(time.time() * 1000 % 4294967295)
   np.random.seed(seed)
