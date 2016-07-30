@@ -113,6 +113,7 @@ def rollout(pol, timestep_limit, seed):
     np.random.seed(seed)
     env = ray.reusables.env
     env.seed(seed)
+    print "env_config", env.spec
     agent = ray.reusables.agent
     print "pol", pol
     agent.set_from_flat(pol)
@@ -150,6 +151,7 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
           paths.append(path)
         for i in range(8):
           path = ray.get(paths[i])
+          print "pathlength", pathlength(path)
           result.append(path)
           timesteps_sofar += pathlength(path)
           if timesteps_sofar > n_timesteps:
