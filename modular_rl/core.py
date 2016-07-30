@@ -104,11 +104,12 @@ def get_paths(env, agent, cfg, seed_iter):
     return do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
 
 
-@ray.remote([np.ndarray, int], [dict])
-def rollout(pol, timestep_limit):
+@ray.remote([np.ndarray, int, int], [dict])
+def rollout(pol, timestep_limit, seed):
     """
     Simulate the env and agent for timestep_limit steps
     """
+    np.random.seed(seed)
     env = ray.reusables.env
     agent = ray.reusables.agent
     agent.set_from_flat(pol)
@@ -142,8 +143,7 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     while True:
         paths = []
         for i in range(8):
-          np.random.seed(seed_iter.next())
-          path = rollout(pol, timestep_limit)
+          path = rollout(pol, timestep_limit, seed_iter.next())
           paths.append(path)
         for i in range(8):
           path = ray.get(paths[i])
