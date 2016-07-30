@@ -55,6 +55,7 @@ if __name__ == "__main__":
     cfg = args.__dict__
     np.random.seed(args.seed)
     agent = agent_ctor(env.observation_space, env.action_space, cfg)
+    print "AGENT SUM", agent.get_flat().sum()
     ray.reusables.agent = ray.Reusable(make_agent_initializer(args.agent, cfg), agent_reinitializer)
     if args.use_hdf:
         hdf, diagnostics = prepare_h5_file(args)
