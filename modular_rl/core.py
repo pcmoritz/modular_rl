@@ -150,6 +150,7 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
           result.append(path)
           timesteps_sofar += pathlength(path)
           if timesteps_sofar > n_timesteps:
+            print "timesteps_sofar", timesteps_sofar
             return result
 
 def pathlength(path):
