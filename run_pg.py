@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     for i in range(20):
       print "result:", [ray.get(result[2]) for result in results]
-      results = [run_experiment(args.__dict__, results[i][0]) for i in range(0, 8)]
+      results = [run_experiment(args.__dict__, results[i][0], results[i][1]) for i in range(0, 8)]
 
     import IPython
     IPython.embed()
