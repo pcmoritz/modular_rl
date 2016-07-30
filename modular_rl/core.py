@@ -115,8 +115,9 @@ def rollout(pol, timestep_limit, seed):
     env.seed(seed)
     print "env_config", env.spec
     agent = ray.reusables.agent
+    pol = pol.astype("float32")
     print "pol", pol.sum()
-    agent.set_from_flat(pol.astype("float32"))
+    agent.set_from_flat(pol)
     ob = env.reset()
     terminated = False
 
