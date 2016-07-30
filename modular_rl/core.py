@@ -146,6 +146,7 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     timesteps_sofar = 0
     print "pol0", agent.get_flat().sum()
     pol = ray.put(agent.get_flat())
+    print "pol1", ray.get(pol).sum()
     while True:
         paths = []
         for i in range(8):
