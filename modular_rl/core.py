@@ -114,6 +114,7 @@ def rollout(pol, timestep_limit, seed):
     env = ray.reusables.env
     env.seed(seed)
     agent = ray.reusables.agent
+    print "pol", pol
     agent.set_from_flat(pol)
     ob = env.reset()
     terminated = False
