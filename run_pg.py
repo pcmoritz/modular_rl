@@ -20,8 +20,8 @@ import ray
 import numpy as np
 
 # TODO(pcm): Use different seeds for different runs
-@ray.remote([dict, np.ndarray], [np.ndarray, np.ndarray, dict])
-def run_experiment(cfg, pol):
+@ray.remote([dict, np.ndarray, np.ndarray], [np.ndarray, np.ndarray, dict])
+def run_experiment(cfg, pol, val):
   args = convert(cfg)
   env = gym.envs.make(args.env)
   env_spec = env.spec
@@ -39,6 +39,12 @@ def run_experiment(cfg, pol):
   agent = agent_ctor(env.observation_space, env.action_space, cfg)
   if pol.size != 0:
     agent.set_from_flat(pol)
+    print "setting policy"
+  if val.size != 0:
+    weights = agent.baseline.reg.net.get_weights()
+    weight_shapes = [weight.shape for weight in weights]
+    agent.baseline.reg.net.set_weights(unflatten(val, weight_shapes))
+    print "setting value function"
   if args.use_hdf:
     hdf, diagnostics = prepare_h5_file(args)
   gym.logger.setLevel(logging.WARN)
@@ -58,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
 
-    results = [run_experiment(args.__dict__, np.array([], dtype="float32")) for i in range(0, 8)]
+    results = [run_experiment(args.__dict__, np.array([], dtype="float32"), np.array([], dtype="float32")) for i in range(0, 8)]
 
     for i in range(20):
       print "result:", [ray.get(result[2]) for result in results]
