@@ -99,7 +99,14 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         stats["TimeElapsed"] = time.time() - tstart
         if callback: callback(stats)
 
-    return agent.get_flat(), stats
+    return agent.get_flat(), flatten(agent.baseline.net.get_weights()), stats
+
+#    def get_flat(self):
+#        return flatten(self.net.get_weights())
+#    def set_from_flat(self, th):
+#        weights = self.net.get_weights()
+#        self._weight_shapes = [weight.shape for weight in weights]
+#        self.net.set_weights(unflatten(th, self._weight_shapes))
 
 def get_paths(env, agent, cfg, seed_iter):
     if cfg["parallel"]:
