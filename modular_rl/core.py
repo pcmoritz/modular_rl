@@ -99,7 +99,7 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         stats["TimeElapsed"] = time.time() - tstart
         if callback: callback(stats)
 
-    return agent.get_flat(), flatten(agent.baseline.net.get_weights()), stats
+    return agent.get_flat(), flatten(agent.baseline.reg.net.get_weights()), stats
 
 #    def get_flat(self):
 #        return flatten(self.net.get_weights())
