@@ -109,6 +109,7 @@ def rollout(pol, timestep_limit, seed):
     """
     Simulate the env and agent for timestep_limit steps
     """
+    print "seed", seed
     np.random.seed(seed)
     env = ray.reusables.env
     env.seed(seed)
