@@ -149,11 +149,8 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
           path = ray.get(paths[i])
           result.append(path)
           timesteps_sofar += pathlength(path)
-        if timesteps_sofar > n_timesteps:
-            break
-    return result
-
-
+          if timesteps_sofar > n_timesteps:
+            return result
 
 def pathlength(path):
     return len(path["action"])
