@@ -81,11 +81,11 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         raise NotImplementedError
 
     tstart = time.time()
-    seed_iter = itertools.count()
+    seed_iter = 0
 
     for _ in xrange(cfg["n_iter"]):
         # Rollouts ========
-        paths = get_paths(env, agent, cfg, seed_iter)
+        paths, seed_iter = get_paths(env, agent, cfg, seed_iter)
         compute_advantage(agent.baseline, paths, gamma=cfg["gamma"], lam=cfg["lam"])
         # VF Update ========
         vf_stats = agent.baseline.fit(paths)
@@ -103,14 +103,16 @@ def get_paths(env, agent, cfg, seed_iter):
     if cfg["parallel"]:
         raise NotImplementedError
     else:
-        paths = do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
-    return paths
+        paths, seed_iter = do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
+    return paths, seed_iter
 
 
-def rollout(env, agent, timestep_limit):
+def rollout(env, agent, timestep_limit, seed):
     """
     Simulate the env and agent for timestep_limit steps
     """
+    np.random.seed(seed)
+    env.seed(seed)
     ob = env.reset()
     terminated = False
 
@@ -138,13 +140,12 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     paths = []
     timesteps_sofar = 0
     while True:
-        np.random.seed(seed_iter.next())
-        path = rollout(env, agent, timestep_limit)
+        path = rollout(env, agent, timestep_limit, seed_iter)
         paths.append(path)
         timesteps_sofar += pathlength(path)
+        seed_iter += 1
         if timesteps_sofar > n_timesteps:
-            break
-    return paths
+            return paths, seed_iter
 
 def pathlength(path):
     return len(path["action"])
