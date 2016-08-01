@@ -8,6 +8,7 @@ from importlib import import_module
 import scipy.optimize
 from .keras_theano_setup import floatX, FNOPTS
 from keras.layers.core import Layer
+import ray
 
 # ================================================================
 # Make agent 
@@ -67,6 +68,8 @@ PG_OPTIONS = [
     ("timestep_limit", int, 0, "maximum length of trajectories"),
     ("n_iter", int, 200, "number of batch"),
     ("parallel", int, 0, "collect trajectories in parallel"),
+    ("remote", int, 0, "use Ray to distribute the computation"),
+    ("n_rollouts", int, 8, "number of rollouts that are computed in parallel"),
     ("timesteps_per_batch", int, 10000, ""),
     ("gamma", float, 0.99, "discount"),
     ("lam", float, 1.0, "lambda parameter from generalized advantage estimation"),
@@ -100,8 +103,8 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         if callback: callback(stats)
 
 def get_paths(env, agent, cfg, seed_iter):
-    if cfg["parallel"]:
-        raise NotImplementedError
+    if cfg["remote"]:
+        paths = do_rollouts_remote(agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], cfg["n_rollouts"], seed_iter)
     else:
         paths = do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
     return paths
@@ -133,6 +136,15 @@ def rollout(env, agent, timestep_limit):
     data = {k:np.array(v) for (k,v) in data.iteritems()}
     data["terminated"] = terminated
     return data
+    
+@ray.remote([np.ndarray, int, int], [dict])
+def parallel_rollout(policy, timestep_limit, seed):
+    env = ray.reusables.env
+    env.seed(seed)
+    np.random.seed(seed)
+    agent = ray.reusables.agent
+    agent.set_from_flat(policy)
+    return rollout(env, agent, timestep_limit)
 
 def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     paths = []
@@ -145,6 +157,21 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
         if timesteps_sofar > n_timesteps:
             break
     return paths
+    
+def do_rollouts_remote(agent, timestep_limit, n_timesteps, n_parallel, seed_iter):
+    policy = ray.put(agent.get_flat())
+    paths = []
+    timesteps_sofar = 0
+    seed = seed_iter.next()
+    while True:
+        rollout_ids = [parallel_rollout.remote(policy, timestep_limit, seed+i) for i in range(n_parallel)]
+        for rollout_id in rollout_ids:
+            path = ray.get(rollout_id)
+            paths.append(path)
+            timesteps_sofar += pathlength(path)
+            if timesteps_sofar > n_timesteps:
+                return paths
+            seed = seed_iter.next()
 
 def pathlength(path):
     return len(path["action"])

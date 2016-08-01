@@ -10,8 +10,11 @@ import argparse, sys, cPickle
 from tabulate import tabulate
 import shutil, os, logging
 import gym
+import ray
 
 if __name__ == "__main__":
+    ray.init(start_ray_local=True, num_workers=8)
+    
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     update_argument_parser(parser, GENERAL_OPTIONS)    
     parser.add_argument("--env",required=True)
@@ -19,6 +22,13 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
     env = make(args.env)
+    # Create a reusable variable for the gym environment.
+    def env_initializer():
+        return gym.make(args.env)
+    def env_reinitializer(env):
+        env.reset()
+        return env
+    ray.reusables.env = ray.Reusable(env_initializer, env_reinitializer)
     env_spec = env.spec
     mondir = args.outfile + ".dir"
     if os.path.exists(mondir): shutil.rmtree(mondir)
@@ -32,6 +42,14 @@ if __name__ == "__main__":
     cfg = args.__dict__
     np.random.seed(args.seed)
     agent = agent_ctor(env.observation_space, env.action_space, cfg)
+    # Create a reusable variable for the agent.
+    def agent_initializer():
+        agent_ctor = get_agent_cls(args.agent)
+        env = ray.reusables.env
+        return agent_ctor(env.observation_space, env.action_space, cfg)
+    def agent_reinitializer(agent):
+        return agent
+    ray.reusables.agent = ray.Reusable(agent_initializer, agent_reinitializer)
     if args.use_hdf:
         hdf, diagnostics = prepare_h5_file(args)
     gym.logger.setLevel(logging.WARN)
