@@ -3,6 +3,9 @@
 This script runs a policy gradient algorithm
 """
 
+import numpy as np
+
+np.random.seed(0)
 
 from gym.envs import make
 from modular_rl import *
@@ -32,7 +35,7 @@ def agent_reinitializer(agent):
   return agent
 
 if __name__ == "__main__":
-    ray.services.start_ray_local(num_workers=8)
+    ray.services.start_ray_local(num_workers=1)
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     update_argument_parser(parser, GENERAL_OPTIONS)
     parser.add_argument("--env",required=True)
@@ -53,7 +56,7 @@ if __name__ == "__main__":
     if args.timestep_limit == 0:
         args.timestep_limit = env_spec.timestep_limit
     cfg = args.__dict__
-    np.random.seed(args.seed)
+    np.random.seed(0)
     agent = agent_ctor(env.observation_space, env.action_space, cfg)
     print "AGENT SUM", agent.get_flat().sum()
     ray.reusables.agent = ray.Reusable(make_agent_initializer(args.agent, cfg), agent_reinitializer)

@@ -82,14 +82,17 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
         raise NotImplementedError
 
     tstart = time.time()
-    seed_iter = itertools.count()
+    seed_iter = 0
 
     for _ in xrange(cfg["n_iter"]):
         # Rollouts ========
-        paths = get_paths(env, agent, cfg, seed_iter)
+        paths, seed_iter = get_paths(env, agent, cfg, seed_iter)
+        np.random.seed(0)
         compute_advantage(agent.baseline, paths, gamma=cfg["gamma"], lam=cfg["lam"])
+        print("XXX predict %12.12f" % agent.baseline.predict(paths[0]).sum())
         # VF Update ========
         vf_stats = agent.baseline.fit(paths)
+        print "vf_stats", vf_stats
         # Pol Update ========
         pol_stats = agent.updater(paths)
         # Stats ========
@@ -116,14 +119,17 @@ def rollout(pol, timestep_limit, seed):
     print "env_config", env.spec
     agent = ray.reusables.agent
     print "dtype", pol.dtype
-    print "pol", pol.sum()
-    agent.set_from_flat(pol)
+    print("pol %.12f" % pol.sum())
+    agent.set_from_flat(np.copy(pol))
+    # agent.set_from_flat(np.random.rand(*agent.get_flat().shape))
     ob = env.reset()
     terminated = False
 
     data = defaultdict(list)
-    for _ in xrange(timestep_limit):
+    for i in xrange(timestep_limit):
         ob = agent.obfilt(ob)
+        if i == 0:
+            print "OBSERVATION", ob.sum()
         data["observation"].append(ob)
         action, agentinfo = agent.act(ob)
         data["action"].append(action)
@@ -150,16 +156,18 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     while True:
         paths = []
         for i in range(8):
-          path = rollout(pol, timestep_limit, seed_iter.next())
+          path = rollout(pol, timestep_limit, seed_iter + i)
           paths.append(path)
         for i in range(8):
           path = ray.get(paths[i])
           print "pathlength", pathlength(path)
           result.append(path)
           timesteps_sofar += pathlength(path)
+          seed_iter += 1
           if timesteps_sofar > n_timesteps:
             print "timesteps_sofar", timesteps_sofar
-            return result
+            return result, seed_iter
+
 
 def pathlength(path):
     return len(path["action"])
