@@ -55,7 +55,7 @@ def run_experiment(cfg, pol, val):
 
 
 if __name__ == "__main__":
-    ray.services.start_ray_local(num_workers=8)
+    ray.init(num_workers=8, start_ray_local=True)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     update_argument_parser(parser, GENERAL_OPTIONS)
@@ -64,11 +64,11 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
 
-    results = [run_experiment(args.__dict__, np.array([], dtype="float32"), np.array([], dtype="float32")) for i in range(0, 8)]
+    results = [run_experiment.remote(args.__dict__, np.array([], dtype="float32"), np.array([], dtype="float32")) for i in range(0, 8)]
 
     for i in range(200):
       print "result:", [ray.get(result[2]) for result in results]
-      results = [run_experiment(args.__dict__, results[i][0], results[i][1]) for i in range(0, 8)]
+      results = [run_experiment.remote(args.__dict__, results[i][0], results[i][1]) for i in range(0, 8)]
 
     import IPython
     IPython.embed()
