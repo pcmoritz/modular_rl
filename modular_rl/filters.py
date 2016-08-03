@@ -39,6 +39,21 @@ class ZFilter(object):
     def output_shape(self, input_space):
         return input_space.shape
 
+    @staticmethod
+    def deserialize(data):
+        demean, destd, clip = data["demean"], data["destd"], data["clip"]
+        n, M, S = data["n"], data["M"], data["S"]
+        filt = ZFilter(M.shape, demean, destd, clip)
+        filt.rs = RunningStat(M.shape)
+        filt.rs._n = n
+        filt.rs._M = M
+        filt.rs._S = S
+        return filt
+
+    def serialize(self):
+        return {"demean": self.demean, "destd": self.destd, "clip": self.clip,
+                "n": self.rs._n, "M": self.rs._M, "S": self.rs._S}
+
 class Flatten(object):
     def __call__(self, x, update=True):
         return x.ravel()

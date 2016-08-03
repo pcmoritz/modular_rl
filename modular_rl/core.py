@@ -1,6 +1,8 @@
 import numpy as np, time, itertools
+import copy
 from collections import OrderedDict
 from .misc_utils import *
+from filters import *
 from . import distributions
 concat = np.concatenate
 import theano.tensor as T, theano
@@ -109,8 +111,7 @@ def get_paths(env, agent, cfg, seed_iter):
         paths = do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
     return paths
 
-
-def rollout(env, agent, timestep_limit):
+def rollout(env, agent, timestep_limit, filt=True):
     """
     Simulate the env and agent for timestep_limit steps
     """
@@ -119,15 +120,14 @@ def rollout(env, agent, timestep_limit):
 
     data = defaultdict(list)
     for _ in xrange(timestep_limit):
-        ob = agent.obfilt(ob)
-        data["observation"].append(ob)
-        action, agentinfo = agent.act(ob)
+        obfilt = agent.obfilt(np.copy(ob))
+        data["observation"].append(1.0 * obfilt if filt else 1.0 * ob)
+        action, agentinfo = agent.act(obfilt)
         data["action"].append(action)
         for (k,v) in agentinfo.iteritems():
             data[k].append(v)
         ob,rew,done,envinfo = env.step(action)
         data["reward"].append(rew)
-        rew = agent.rewfilt(rew)
         for (k,v) in envinfo.iteritems():
             data[k].append(v)
         if done:
@@ -136,15 +136,16 @@ def rollout(env, agent, timestep_limit):
     data = {k:np.array(v) for (k,v) in data.iteritems()}
     data["terminated"] = terminated
     return data
-    
-@ray.remote([np.ndarray, int, int], [dict])
-def parallel_rollout(policy, timestep_limit, seed):
+
+@ray.remote([np.ndarray, ZFilter, int, int], [dict])
+def do_rollout(policy, obfilter, timestep_limit, seed):
     env = ray.reusables.env
     env.seed(seed)
     np.random.seed(seed)
     agent = ray.reusables.agent
+    agent.obfilter.rs = copy.deepcopy(obfilter.rs)
     agent.set_from_flat(policy)
-    return rollout(env, agent, timestep_limit)
+    return rollout(env, agent, timestep_limit, filt=False)
 
 def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
     paths = []
@@ -163,13 +164,19 @@ def do_rollouts_remote(agent, timestep_limit, n_timesteps, n_parallel, seed_iter
     paths = []
     timesteps_sofar = 0
     seed = seed_iter.next()
+    # Use filters from the past iterations since the beginning of the experiment.
+    obfilter = ray.put(agent.obfilter)
     while True:
-        rollout_ids = [parallel_rollout.remote(policy, timestep_limit, seed+i) for i in range(n_parallel)]
+        rollout_ids = [do_rollout.remote(policy, obfilter, timestep_limit, seed+i) for i in range(n_parallel)]
         for rollout_id in rollout_ids:
             path = ray.get(rollout_id)
             paths.append(path)
             timesteps_sofar += pathlength(path)
             if timesteps_sofar > n_timesteps:
+                # Update observation filter of the agent.
+                for path in paths:
+                    for i in range(pathlength(path)):
+                        path["observation"][i,:] = agent.obfilter(path["observation"][i,:])
                 return paths
             seed = seed_iter.next()
 
