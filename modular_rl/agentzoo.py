@@ -29,7 +29,7 @@ def make_mlps(ob_space, ac_space, cfg):
         probtype = Categorical(outdim)
     net = Sequential()
     for (i, layeroutsize) in enumerate(hid_sizes):
-        inshp = dict(input_shape=ob_space.shape) if i==0 else {}
+        inshp = dict(input_shape=(np.prod(ob_space.shape),)) if i==0 else {}
         net.add(Dense(layeroutsize, activation=cfg["activation"], **inshp))
     if isinstance(ac_space, Box):
         net.add(Dense(outdim))
@@ -43,7 +43,7 @@ def make_mlps(ob_space, ac_space, cfg):
     policy = StochPolicyKeras(net, probtype)
     vfnet = Sequential()
     for (i, layeroutsize) in enumerate(hid_sizes):
-        inshp = dict(input_shape=(ob_space.shape[0]+1,)) if i==0 else {} # add one extra feature for timestep
+        inshp = dict(input_shape=(np.prod(ob_space.shape)+1,)) if i==0 else {} # add one extra feature for timestep
         vfnet.add(Dense(layeroutsize, activation=cfg["activation"], **inshp))
     vfnet.add(Dense(1))
     baseline = NnVf(vfnet, cfg["timestep_limit"], dict(mixfrac=0.1))
@@ -75,7 +75,7 @@ FILTER_OPTIONS = [
 
 def make_filters(cfg, ob_space):
     if cfg["filter"]:
-        obfilter = ZFilter(ob_space.shape, clip=5)
+        obfilter = ZFilter((np.prod(ob_space.shape)), clip=5)
         rewfilter = ZFilter((), demean=False, clip=10)
     else:
         obfilter = IDENTITY

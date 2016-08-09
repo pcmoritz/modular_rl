@@ -115,7 +115,7 @@ def rollout(env, agent, timestep_limit, filt=True):
     """
     Simulate the env and agent for timestep_limit steps
     """
-    ob = env.reset()
+    ob = env.reset().reshape(-1)
     terminated = False
 
     data = defaultdict(list)
@@ -127,6 +127,7 @@ def rollout(env, agent, timestep_limit, filt=True):
         for (k,v) in agentinfo.iteritems():
             data[k].append(v)
         ob,rew,done,envinfo = env.step(action)
+        ob = ob.reshape(-1)
         data["reward"].append(rew)
         for (k,v) in envinfo.iteritems():
             data[k].append(v)
@@ -135,6 +136,7 @@ def rollout(env, agent, timestep_limit, filt=True):
             break
     data = {k:np.array(v) for (k,v) in data.iteritems()}
     data["terminated"] = terminated
+    data["state"] = None # strings as "objects" in numpy arrays cannot be serialized right now
     return data
 
 @ray.remote([np.ndarray, ZFilter, int, int], [dict])
@@ -212,6 +214,7 @@ class StochPolicy(object):
     def get_output(self):
         raise NotImplementedError
     def act(self, ob, stochastic=True):
+        ob = ob.reshape(-1)
         prob = self._act_prob(ob[None])
         if stochastic:
             return self.probtype.sample(prob)[0], {"prob" : prob[0]}
@@ -463,10 +466,11 @@ class NnVf(object):
         self.reg = NnRegression(net, **regression_params)
         self.timestep_limit = timestep_limit
     def predict(self, path):
-        ob_no = self.preproc(path["observation"])
+        o = path["observation"].reshape(pathlength(path), -1)
+        ob_no = self.preproc(o)
         return self.reg.predict(ob_no)[:,0]
     def fit(self, paths):
-        ob_no = concat([self.preproc(path["observation"]) for path in paths], axis=0)
+        ob_no = concat([self.preproc(path["observation"].reshape(pathlength(path), -1)) for path in paths], axis=0)
         vtarg_n1 = concat([path["return"] for path in paths]).reshape(-1,1)
         return self.reg.fit(ob_no, vtarg_n1)
     def preproc(self, ob_no):
