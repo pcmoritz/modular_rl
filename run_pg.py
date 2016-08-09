@@ -44,8 +44,14 @@ if __name__ == "__main__":
     agent = agent_ctor(env.observation_space, env.action_space, cfg)
     # Create a reusable variable for the agent.
     def agent_initializer():
+        import time
+        import random
         agent_ctor = get_agent_cls(args.agent)
         env = ray.reusables.env
+        # HACK(pcm): keras both reads and writes its config file on startup
+        # we add a random sleep so that the multiple processes do not try to read and writes
+        # the config at the same time
+        time.sleep(random.random())
         return agent_ctor(env.observation_space, env.action_space, cfg)
     def agent_reinitializer(agent):
         return agent
