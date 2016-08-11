@@ -170,6 +170,9 @@ def do_rollouts_remote(agent, timestep_limit, n_timesteps, n_parallel, seed_iter
     obfilter = ray.put(agent.obfilter)
     while True:
         rollout_ids = [do_rollout.remote(policy, obfilter, timestep_limit, seed+i) for i in range(n_parallel)]
+        # also do a serial rollout just to make the monitor happy
+        np.random.seed(seed)
+        path = rollout(env, agent, timestep_limit)
         for rollout_id in rollout_ids:
             path = ray.get(rollout_id)
             paths.append(path)
