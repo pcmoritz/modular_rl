@@ -32,7 +32,8 @@ if __name__ == "__main__":
     def env_reinitializer(env):
         env.reset()
         return env
-    ray.reusables.env = ray.Reusable(env_initializer, env_reinitializer)
+    if args.remote:
+      ray.reusables.env = ray.Reusable(env_initializer, env_reinitializer)
     env_spec = env.spec
     mondir = args.outfile + ".dir"
     if os.path.exists(mondir): shutil.rmtree(mondir)
@@ -53,7 +54,8 @@ if __name__ == "__main__":
         return agent_ctor(env.observation_space, env.action_space, cfg)
     def agent_reinitializer(agent):
         return agent
-    ray.reusables.agent = ray.Reusable(agent_initializer, agent_reinitializer)
+    if args.remote:
+      ray.reusables.agent = ray.Reusable(agent_initializer, agent_reinitializer)
     if args.use_hdf:
         hdf, diagnostics = prepare_h5_file(args)
     gym.logger.setLevel(logging.WARN)
