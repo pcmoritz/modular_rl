@@ -22,18 +22,6 @@ if __name__ == "__main__":
     parser.add_argument("--plot",action="store_true")
     args,_ = parser.parse_known_args([arg for arg in sys.argv[1:] if arg not in ('-h', '--help')])
     env = make(args.env)
-    # Create a reusable variable for the gym environment.
-    def env_initializer():
-        import time
-        import random
-        time.sleep(random.random())
-        import keras
-        return gym.make(args.env)
-    def env_reinitializer(env):
-        env.reset()
-        return env
-    if args.remote:
-      ray.reusables.env = ray.Reusable(env_initializer, env_reinitializer)
     env_spec = env.spec
     mondir = args.outfile + ".dir"
     if os.path.exists(mondir): shutil.rmtree(mondir)
@@ -47,6 +35,18 @@ if __name__ == "__main__":
     cfg = args.__dict__
     np.random.seed(args.seed)
     agent = agent_ctor(env.observation_space, env.action_space, cfg)
+    # Create a reusable variable for the gym environment.
+    def env_initializer():
+        import time
+        import random
+        time.sleep(random.random())
+        import keras
+        return gym.make(args.env)
+    def env_reinitializer(env):
+        env.reset()
+        return env
+    if args.remote:
+        ray.reusables.env = ray.Reusable(env_initializer, env_reinitializer)
     # Create a reusable variable for the agent.
     def agent_initializer():
         agent_ctor = get_agent_cls(args.agent)
