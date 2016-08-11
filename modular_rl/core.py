@@ -106,7 +106,7 @@ def run_policy_gradient_algorithm(env, agent, usercfg=None, callback=None):
 
 def get_paths(env, agent, cfg, seed_iter):
     if cfg["remote"]:
-        paths = do_rollouts_remote(agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], cfg["n_rollouts"], seed_iter)
+        paths = do_rollouts_remote(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], cfg["n_rollouts"], seed_iter)
     else:
         paths = do_rollouts_serial(env, agent, cfg["timestep_limit"], cfg["timesteps_per_batch"], seed_iter)
     return paths
@@ -161,7 +161,7 @@ def do_rollouts_serial(env, agent, timestep_limit, n_timesteps, seed_iter):
             break
     return paths
     
-def do_rollouts_remote(agent, timestep_limit, n_timesteps, n_parallel, seed_iter):
+def do_rollouts_remote(env, agent, timestep_limit, n_timesteps, n_parallel, seed_iter):
     policy = ray.put(agent.get_flat())
     paths = []
     timesteps_sofar = 0
