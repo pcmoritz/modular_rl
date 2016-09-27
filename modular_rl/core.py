@@ -139,7 +139,7 @@ def rollout(env, agent, timestep_limit, filt=True):
     data["state"] = None # strings as "objects" in numpy arrays cannot be serialized right now
     return data
 
-@ray.remote([np.ndarray, ZFilter, int, int], [dict])
+@ray.remote
 def do_rollout(policy, obfilter, timestep_limit, seed):
     env = ray.reusables.env
     env.seed(seed)

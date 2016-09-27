@@ -14,7 +14,9 @@ import ray
 
 if __name__ == "__main__":
     ray.init(start_ray_local=True, num_workers=8)
-    
+    ray.register_class(filters.ZFilter)
+    ray.register_class(running_stat.RunningStat)
+    ray.register_class(type(IDENTITY), pickle=True)
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     update_argument_parser(parser, GENERAL_OPTIONS)    
     parser.add_argument("--env",required=True)
